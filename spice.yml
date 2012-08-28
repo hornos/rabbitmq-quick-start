@@ -5,4 +5,5 @@ cookbooks:
 - users:
 - sudo:
 - vim:
+- erlang:
 - rabbitmq:
