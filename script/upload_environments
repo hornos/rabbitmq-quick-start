@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "Upload environments?"
+read
+for i in ./environments/*.rb ; do
+  knife environment from file ${i}
+done
+

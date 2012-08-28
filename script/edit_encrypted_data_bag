@@ -1,0 +1,17 @@
+#!/bin/bash
+
+KEY=.chef/data_bag.key
+if ! test -r "${KEY}" ; then
+  echo "Key not found: ${KEY}"
+  exit 1
+fi
+
+DST=${1}
+if test "${DST}" = "" ; then
+  exit 1
+fi
+
+echo "Edit encrypted data bag item ${DST}?"
+read
+
+EDITOR=mcedit knife data bag edit --secret-file ${KEY} secrets mysql

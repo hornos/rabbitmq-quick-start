@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo "Start EC2 instance?"
+read
+knife ec2 server create \
+  -S aws -i .chef/aws.pem \
+  -G webserver,default \
+  -x ubuntu \
+  -d ubuntu12.04-gems \
+  -E prod \
+  -I ami-a29943cb \
+  -f m1.small \
+  -r "role[base],role[db_master],role[webserver]"

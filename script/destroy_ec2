@@ -1,0 +1,12 @@
+#!/bin/bash
+
+INS=$1
+if test "${INS}" = "" ; then
+  exit 1
+fi
+echo "Destroy EC2 instance ${INS}?"
+read
+
+knife ec2 server delete $INS
+knife node delete $INS
+knife client delete $INS

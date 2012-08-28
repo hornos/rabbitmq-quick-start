@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "Upload roles?"
+read
+for i in ./roles/*.rb ; do
+  knife role from file ${i}
+done
+

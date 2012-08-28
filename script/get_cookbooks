@@ -1,0 +1,11 @@
+#!/bin/bash
+
+COOKBOOKS="apt git mysql apache2 php build-essential users sudo vim"
+
+echo ""
+echo "Cookbooks: ${COOKBOOKS}"
+echo "Download?"
+read
+for i in ${COOKBOOKS} ; do
+  knife cookbook site install ${i}
+done

@@ -1,0 +1,24 @@
+#!/bin/bash
+
+KEY=.chef/data_bag.key
+
+if ! test -r "${KEY}" ; then
+  echo "Data bag key not found: ${KEY}"
+  exit 1
+fi
+
+DST=${1}
+SRC="data_bags/.notencrypted/${DST}.json"
+if ! test -r "${SRC}" ; then
+  echo "Source data bag not found: ${SRC}"
+  exit 1
+fi
+
+echo "Create data bag item ${DST} from ${SRC}?"
+read
+# will create DST item in secrets
+# knife data bag create --secret-file ${KEY} secrets ${DST}
+knife data bag create secrets
+knife data bag from file secrets --secret-file ${KEY} ${SRC}
+
+

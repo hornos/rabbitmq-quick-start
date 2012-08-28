@@ -1,0 +1,25 @@
+#!/bin/bash
+
+echo "Create sysadmin user?"
+read
+mkdir -p data_bags/users
+
+KEY="${USER}.key"
+if test -r "${KEY}" ; then
+  echo "Remove key: ${KEY}"
+  exit 1
+fi
+
+ssh-keygen -b 2048 -C "lamp-quick-start" -f ${USER}.key
+PUB=$(cat ${USER}.key.pub)
+
+cat > data_bags/users/${USER}.json <<EOF
+{
+  "id": "${USER}",
+  "ssh_keys": "${PUB}",
+  "groups": [ "sysadmin", "dba", "devops" ],
+  "uid": 2001,
+  "shell": "\/bin\/bash"
+}
+EOF
+

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+KEY=.chef/data_bag.key
+if ! test -r "${KEY}" ; then
+  echo "Key not found: ${KEY}"
+  exit 1
+fi
+
+DST=${1}
+SRC="data_bags/secrets/${DST}.json"
+if test -r "${SRC}" ; then
+  echo "Remove data bag: ${SRC}"
+  exit 1
+fi
+
+echo "Download encrypted data bag item ${DST}?"
+read
+mkdir -p data_bags/secrets
+knife data bag show secrets ${DST} -Fj > ${SRC}

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "Upload cookbooks?"
+read
+knife cookbook upload --all

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+INS=$1
+if test "${INS}" = "" ; then
+  exit 1
+fi
+echo "Destroy instance ${INS}?"
+read
+
+knife node delete $INS
+knife client delete $INS

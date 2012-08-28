@@ -1,0 +1,8 @@
+cookbooks:
+- apt:
+- git:
+- build-essential:
+- users:
+- sudo:
+- vim:
+- rabbitmq:

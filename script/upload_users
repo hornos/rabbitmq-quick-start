@@ -1,0 +1,6 @@
+#!/bin/bash
+
+echo "Upload users?"
+read
+knife data bag create users
+knife data bag from file users ${USER}.json
