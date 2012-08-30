@@ -3,9 +3,9 @@
   :rabbit1:
     :hostonly: 10.10.10.11
     :cpus: 1
+    :roles: recipe[vagrant::hosts],role[base],role[rabbitmq]
     :chef_client:
       :environmnet: dev
-      :roles: recipe[vagrant::hosts],role[base],role[rabbitmq]
       :orgname: macbook
       :server_url: http://10.10.10.10:4000
       :validation_client_name: chef-validator
@@ -15,9 +15,9 @@
   :rabbit2:
     :hostonly: 10.10.10.12
     :cpus: 1
+    :roles: recipe[vagrant::hosts],role[base],role[rabbitmq]
     :chef_client:
       :environmnet: dev
-      :roles: recipe[vagrant::hosts],role[base],role[rabbitmq]
       :orgname: macbook
       :server_url: http://10.10.10.10:4000
       :validation_client_name: chef-validator

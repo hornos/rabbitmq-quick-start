@@ -5,7 +5,7 @@
 
 begin
   file = 'Clusterfile.yml'
-  STDOUT.puts "DEBUG: file: #{file}" if DEBUG
+  puts "Clusterfile: #{file}"
   if (file.end_with?(".yml"))
     $cluster = YAML.load_file file
   elsif (file.end_with?(".json"))
@@ -18,10 +18,13 @@ rescue JSON::ParserError => e
   STDERR.puts e.message
   STDERR.puts "ERROR: Parsing error in the infrastructure file provided."
   exit(-1)
-rescue Exception
+rescue Exception => e
+  STDERR.puts e.message
   STDERR.puts "ERROR: No infrastructure .json or .yml file provided."
   exit(-1)
 end
+
+puts $cluster.inspect
 
 
 Vagrant::Config.run do |config|
@@ -104,12 +107,13 @@ Vagrant::Config.run do |config|
           end
           chef.environment = opts[:chef_client][:environment]
 
-          if not opts[:chef_client][:roles].nil? then 
-            chef.run_list = opts[:chef_client][:roles].split(",")
+          if not opts[:roles].nil? then 
+            chef.run_list = opts[:roles].split(",")
           end
 
           chef.json = {
-            :cluster => $cluster
+            :cluster => $cluster,
+            :host => opts
           }
 
         end # :chef_client
@@ -122,8 +126,8 @@ Vagrant::Config.run do |config|
           chef.log_level = :debug
 
           # process role string
-          if not opts[:chef_solo][:roles].nil? then 
-            chef.run_list = opts[:chef_solo][:roles].split(",")
+          if not opts[:roles].nil? then 
+            chef.run_list = opts[:roles].split(",")
           end
 
           # access from chef node[:]
