@@ -1,6 +1,5 @@
 127.0.0.1 localhost
-<% cluster=node[:cluster] %>
-<% cluster[:nodes].map {|k,n| [n[:hostonly],k.to_s,n[:alias]]}.compact.sort.each do |ip,name,al| -%>
+<% @cluster[:nodes].map {|k,n| [n[:hostonly],k.to_s,n[:alias]]}.compact.sort.each do |ip,name,al| -%>
 <%= ip %> <%= name %> <%= al %>
 <% end -%>
 ::1     ip6-localhost ip6-loopback

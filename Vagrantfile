@@ -1,71 +1,50 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 #
-# load clusterfile
 
+# header
+clusterfile = "Clusterfile.yml"
 begin
-  file = 'Clusterfile.yml'
-  puts "Clusterfile: #{file}"
-  if (file.end_with?(".yml"))
-    $cluster = YAML.load_file file
-  elsif (file.end_with?(".json"))
-    $cluster = JSON.parse(File.read(file))
-  else
-    STDERR.puts "ERROR: Unknown file type, please use a file ending with either '.json' or '.yml'."
-    exit(-1)
-  end
-rescue JSON::ParserError => e
-  STDERR.puts e.message
-  STDERR.puts "ERROR: Parsing error in the infrastructure file provided."
-  exit(-1)
+  $cluster = YAML.load_file clusterfile
 rescue Exception => e
   STDERR.puts e.message
-  STDERR.puts "ERROR: No infrastructure .json or .yml file provided."
+  STDERR.puts "ERROR: Clusterfile not found: #{clusterfile}"
   exit(-1)
 end
 
-puts $cluster.inspect
 
-
+# vagrant
 Vagrant::Config.run do |config|
 
+  vm_defaults = proc do |cfg|
+    $cluster[:defaults][:vm].each do |k,v|
+      eval("cfg.vm.#{k} = \"#{v}\"")
+    end
 
-  # defaults
-  vm_default = proc do |cfg|
-    cfg.vm.box = "precise64-ruby-1.9.3-p194"
-    cfg.vm.box_url = "https://dl.dropbox.com/u/14292474/vagrantboxes/precise64-ruby-1.9.3-p194.box"
-
-    cfg.vm.customize ["modifyvm", :id, "--rtcuseutc", "on"]
-    cfg.vm.customize ["modifyvm", :id, "--memory", 256]
-
-    # https://groups.google.com/forum/?fromgroups#!topic/vagrant-up/a2COzF4E0gc%5B1-25%5D
-    # http://serverfault.com/questions/414517/vagrant-virtualbox-host-only-multiple-node-networking-issue
-    # cfg.vm.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]
+    $cluster[:defaults][:modifyvm].each do |k,v|
+      cfg.vm.customize ["modifyvm", :id, "--#{k}", "#{v}"]
+    end
   end
 
-
-  chef_default = proc do |chef|
-    # local, solo, opscode's
-    chef.cookbooks_path = ["cookbooks", "../cookbooks.solo", "../cookbooks/chef-server"]
-    chef.roles_path     = "roles"
-    chef.data_bags_path = "data_bags"
-  end
-
-
-  # configure nodes
+  # cluster
   $cluster[:nodes].each do |node,opts|
-    puts "Cluster configurtion: #{node}"
+    puts "Load cluster node: #{node}"
     config.vm.define node.to_s do |cfg|
-      # defaults
-      vm_default[cfg]
-
-      cfg.vm.customize ["modifyvm", :id, "--cpus", opts[:cpus]]
+      vm_defaults[cfg]
+      # cpu and memory
+      if not opts[:cpus].nil? then 
+        cfg.vm.customize ["modifyvm", :id, "--cpus", opts[:cpus]]
+      end
+      if not opts[:memory].nil? then 
+        cfg.vm.customize ["modifyvm", :id, "--memory", opts[:memory]]
+      end
 
       cfg.vm.host_name = node.to_s
-      # cfg.vm.base_mac = '080037E7B25D'
 
+      # networking
       if not opts[:hostonly].nil? then
         cfg.vm.network :hostonly, opts[:hostonly]
+        puts "Hostonly #{node.to_s} #{opts[:hostonly]}"
       end
       if not opts[:bridged].nil? then
         cfg.vm.network :bridged, opts[:bridged]
@@ -76,58 +55,44 @@ Vagrant::Config.run do |config|
         opts[:forward].each { |p| cfg.vm.forward_port p[0], p[1]}
       end
 
-      # vb guest version check
-      # cfg.vbguest.auto_update = false
-      # cfg.vbguest.no_remote   = true
-
-
-      # provision by chef solo
       if opts[:chef_client] then
-        orgname = opts[:chef_client][:orgname]
+        orgname = $cluster[:knife][:node_name]
 
         cfg.vm.provision :chef_client do |chef|
-          if opts[:chef_client][:server_url].nil? then
+          if $cluster[:knife][:server_url].nil? then
             chef.chef_server_url = "https://api.opscode.com/organizations/#{orgname}"
           else
-            chef.chef_server_url = opts[:chef_client][:server_url]
+            chef.chef_server_url = $cluster[:knife][:server_url]
           end
 
-          if opts[:chef_client][:validation_client_name].nil? then
+          if $cluster[:knife][:client_name].nil? then
             chef.validation_client_name = "#{orgname}-validator"
             chef.validation_key_path = ".chef/#{orgname}-validator.pem"
           else
-            chef.validation_client_name = opts[:chef_client][:validation_client_name]
-            chef.validation_key_path = ".chef/#{opts[:chef_client][:validation_client_name]}.pem"
+            chef.validation_client_name = $cluster[:knife][:client_name]
+            chef.validation_key_path = ".chef/#{$cluster[:knife][:client_name]}.pem"
           end
 
           chef.encrypted_data_bag_secret_key_path = ".chef/data_bag.key"
-          chef.node_name = "#{node.to_s}"
-          if not opts[:log_level].nil? then
-            chef.log_level = opts[:log_level]
+          chef.node_name = node.to_s
+
+          if not $cluster[:knife][:log_level].nil? then
+            chef.log_level = $cluster[:knife][:log_level]
           end
-          chef.environment = opts[:chef_client][:environment]
+          chef.environment = opts[:chef_client]
 
           if not opts[:roles].nil? then 
-            chef.run_list = opts[:roles].split(",")
+            chef.run_list = opts[:roles]
           end
-
-          chef.json = {
-            :cluster => $cluster,
-            :host => opts
-          }
-
         end # :chef_client
       else
         cfg.vm.provision :chef_solo do |chef|
-          # chef_default[chef]
           chef.cookbooks_path = opts[:cookbooks_path].nil? ? "cookbooks" : opts[:cookbooks_path]
 
-          # chef.environment = "_default"
           chef.log_level = :debug
 
-          # process role string
           if not opts[:roles].nil? then 
-            chef.run_list = opts[:roles].split(",")
+            chef.run_list = opts[:roles]
           end
 
           # access from chef node[:]
